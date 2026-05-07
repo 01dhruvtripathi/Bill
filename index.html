@@ -320,6 +320,28 @@
       color: #294c7e;
     }
 
+    .result-total-block {
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 12px;
+      border: 2px solid #8db6ff;
+      background: linear-gradient(180deg, #ffffff 0%, #edf4ff 100%);
+    }
+
+    .result-total-label {
+      display: block;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #2a4f82;
+      margin-bottom: 4px;
+    }
+
+    .result-total-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #0b2f63;
+    }
+
     @media (max-width: 700px) {
       body {
         padding: 16px 12px;
@@ -377,6 +399,12 @@
       }
       .result-note {
         font-size: 1.15rem;
+      }
+      .result-total-label {
+        font-size: 1.05rem;
+      }
+      .result-total-value {
+        font-size: 1.6rem;
       }
       .result-grid {
         grid-template-columns: 1fr;
@@ -464,6 +492,7 @@
         mamiBill: "Mami Total Bill Price",
         naniUnits: "Nani Meter Units",
         naniBill: "Nani Total Bill Price",
+        ansDifference: "Total Moter and Invertor Bill",
         note: (total) => `Total Bill Entered: ${total}. Final split calculated with (Unit x 7) and remaining difference divided equally.`,
       },
       hi: {
@@ -487,6 +516,7 @@
         mamiBill: "मामी कुल बिल राशि",
         naniUnits: "नानी मीटर यूनिट",
         naniBill: "नानी कुल बिल राशि",
+        ansDifference: "कुल मोटर और इनवर्टर बिल",
         note: (total) => `दर्ज कुल बिल: ${total}। अंतिम स्प्लिट (यूनिट x 7) और बचा हुआ अंतर बराबर बांटकर निकाला गया है।`,
       },
     };
@@ -529,6 +559,10 @@
           <div class="result-item price-item"><strong>${t.naniBill}</strong><span>${data.naniBillPrice}</span></div>
         </div>
         <p class="result-note">${t.note(data.totalBill)}</p>
+        <div class="result-total-block">
+          <strong class="result-total-label">${t.ansDifference}</strong>
+          <span class="result-total-value">${data.differenceFromTotal}</span>
+        </div>
       `;
     }
 
@@ -611,6 +645,7 @@
           mamiBillPrice: formatAmount(roundByLastDigitRule(mamiFinalBill)),
           naniBillPrice: formatAmount(roundByLastDigitRule(naniFinalBill)),
           totalBill: formatAmount(totalBill),
+          differenceFromTotal: formatAmount(differenceFromTotal),
         },
       };
       renderBillPreview(lastResult.data);

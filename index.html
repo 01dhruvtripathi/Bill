@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meter Bill Generator</title>
+  <style>
+    :root {
+      --panel: rgba(255, 255, 255, 0.88);
+      --text: #13233f;
+      --muted: #5f7293;
+      --accent: #3b82f6;
+      --accent-2: #7c3aed;
+      --ring: rgba(59, 130, 246, 0.28);
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      position: relative;
+      overflow-x: hidden;
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(900px 450px at 8% -5%, rgba(167, 139, 250, 0.28), transparent 60%),
+        radial-gradient(760px 420px at 100% 0%, rgba(56, 189, 248, 0.2), transparent 58%),
+        radial-gradient(900px 540px at 50% 115%, rgba(244, 114, 182, 0.15), transparent 62%),
+        linear-gradient(160deg, #f4f7ff 0%, #edf4ff 55%, #f9fbff 100%);
+      padding: 28px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      filter: blur(65px);
+      z-index: -1;
+      opacity: 0.4;
+    }
+
+    body::before {
+      top: -150px;
+      left: -110px;
+      background: radial-gradient(circle, rgba(167, 139, 250, 0.75) 0%, rgba(59, 130, 246, 0.22) 48%, transparent 74%);
+    }
+
+    body::after {
+      bottom: -170px;
+      right: -120px;
+      background: radial-gradient(circle, rgba(34, 211, 238, 0.65) 0%, rgba(6, 182, 212, 0.2) 48%, transparent 74%);
+    }
+
+    .card {
+      width: min(980px, 100%);
+      border-radius: 22px;
+      padding: 30px;
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      box-shadow:
+        0 0 0 1px rgba(147, 197, 253, 0.48),
+        0 24px 45px rgba(43, 80, 138, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 0%, rgba(59, 130, 246, 0.06) 42%, transparent 72%);
+      pointer-events: none;
+    }
+
+    .heading {
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    
+    .topbar {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .lang-btn {
+      border: 2px solid #93c5fd;
+      background: #ffffff;
+      color: #1e3a67;
+      border-radius: 12px;
+      padding: 10px 22px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(59, 130, 246, 0.12);
+      transition: all 0.2s ease;
+    }
+
+    .lang-btn:hover {
+      background: #eff6ff;
+    }
+
+    .lang-btn.active {
+      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 52%, #0ea5e9 100%);
+      color: #ffffff;
+      border-color: #2563eb;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28);
+    }
+
+    .icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 1.45rem;
+      background: linear-gradient(135deg, #f472b6, var(--accent-2) 52%, #38bdf8);
+      box-shadow: 0 8px 20px rgba(124, 58, 237, 0.25);
+      flex-shrink: 0;
+    }
+
+    .title-wrap {
+      min-width: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.2rem, 4.2vw, 3.4rem);
+      line-height: 1.2;
+      letter-spacing: 0.4px;
+      color: #102445;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 1.35rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .field {
+      background: rgba(255, 255, 255, 0.84);
+      border-radius: 12px;
+      border: 1px solid #d8e6ff;
+      padding: 14px;
+      transition: transform 0.18s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    }
+
+    .field:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 22px rgba(59, 130, 246, 0.13);
+      border-color: #93c5fd;
+    }
+
+    label {
+      display: block;
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #1e3a67;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid #c8d8f3;
+      border-radius: 10px;
+      padding: 16px 14px;
+      font-size: 1.3rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: #f8fbff;
+      color: #1a2f54;
+    }
+
+    input::placeholder {
+      color: #7a94bb;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--ring);
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    #generateBtn {
+      margin-top: 20px;
+      width: 100%;
+      border: 1px solid #60a5fa;
+      border-radius: 12px;
+      padding: 18px;
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 52%, #0ea5e9 100%);
+      cursor: pointer;
+      transition: transform 0.12s ease, filter 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      overflow: hidden;
+      text-transform: uppercase;
+      letter-spacing: 1.3px;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28);
+    }
+
+    #generateBtn:hover {
+      filter: brightness(1.06);
+      box-shadow: 0 12px 26px rgba(124, 58, 237, 0.28);
+    }
+
+    #generateBtn::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.35) 50%, transparent 80%);
+      transform: translateX(-130%);
+      transition: transform 0.45s ease;
+    }
+
+    #generateBtn:hover::after {
+      transform: translateX(130%);
+    }
+
+    #generateBtn:active {
+      transform: translateY(1px);
+    }
+
+    #result {
+      margin-top: 20px;
+      padding: 22px;
+      border-radius: 14px;
+      border: 2px solid #93c5fd;
+      background: linear-gradient(180deg, #ffffff 0%, #eef5ff 100%);
+      display: none;
+      line-height: 1.55;
+      color: #102a4d;
+    }
+
+    .result-title {
+      margin: 0 0 12px;
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: #0f2c54;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .required-asterisk {
+      color: #ef4444;
+      font-weight: 700;
+      margin-left: 4px;
+    }
+
+    .result-item {
+      padding: 14px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 2px solid #bfd7ff;
+    }
+
+    .result-item strong {
+      display: block;
+      font-size: 1.1rem;
+      color: #45628d;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    .result-item span {
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: #102f5d;
+    }
+
+    .price-item {
+      border-color: #8db6ff;
+      background: linear-gradient(180deg, #ffffff 0%, #f2f7ff 100%);
+    }
+
+    .price-item strong {
+      font-size: 1.35rem;
+      color: #274a7a;
+      font-weight: 800;
+    }
+
+    .price-item span {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: #0b2f63;
+    }
+
+    .result-note {
+      margin: 0;
+      font-size: 1.35rem;
+      color: #294c7e;
+    }
+
+    @media (max-width: 700px) {
+      body {
+        padding: 16px 12px;
+      }
+      .card {
+        width: min(980px, 100%);
+        padding: 18px;
+        border-radius: 14px;
+      }
+      .heading {
+        align-items: flex-start;
+      }
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .full {
+        grid-column: auto;
+      }
+      label {
+        font-size: 1.15rem;
+      }
+      input {
+        padding: 12px;
+        font-size: 1.1rem;
+      }
+      button {
+        padding: 14px;
+        font-size: 1.2rem;
+      }
+      .lang-btn {
+        font-size: 1rem;
+        padding: 8px 16px;
+      }
+      .heading {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .subtitle {
+        font-size: 1.1rem;
+      }
+      .result-title {
+        font-size: 1.9rem;
+      }
+      .result-item strong {
+        font-size: 1rem;
+      }
+      .result-item span {
+        font-size: 1.4rem;
+      }
+      .price-item strong {
+        font-size: 1.2rem;
+      }
+      .price-item span {
+        font-size: 1.95rem;
+      }
+      .result-note {
+        font-size: 1.15rem;
+      }
+      .result-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="topbar">
+      <button type="button" id="langEnglish" class="lang-btn active">English</button>
+      <button type="button" id="langHindi" class="lang-btn">हिंदी</button>
+    </div>
+    <div class="heading">
+      <div class="icon">⚡</div>
+      <div class="title-wrap">
+        <h1 id="titleText">Meter Bill Generator</h1>
+        <p id="subtitleText" class="subtitle">Enter old/new readings and total amount to prepare the split bill.</p>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="field">
+        <label for="mamiOld" id="mamiOldLabel">Mami Meter Old Reading</label>
+        <input type="number" id="mamiOld" min="0" step="any" required />
+      </div>
+      <div class="field">
+        <label for="mamiNew" id="mamiNewLabel">Mami Meter New Reading</label>
+        <input type="number" id="mamiNew" min="0" step="any" required />
+      </div>
+      <div class="field">
+        <label for="naniOld" id="naniOldLabel">Nani Meter Old Reading</label>
+        <input type="number" id="naniOld" min="0" step="any" required />
+      </div>
+      <div class="field">
+        <label for="naniNew" id="naniNewLabel">Nani Meter New Reading</label>
+        <input type="number" id="naniNew" min="0" step="any" required />
+      </div>
+      <div class="field full">
+        <label for="totalBill" id="totalBillLabel">Total Bill Price</label>
+        <input type="number" id="totalBill" min="0" step="any" required />
+      </div>
+    </div>
+
+    <button id="generateBtn">Generate Bill</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const toNum = (id) => Number(document.getElementById(id).value);
+    const formatAmount = (value) => (Number.isInteger(value) ? value : value.toFixed(2));
+    const roundByLastDigitRule = (value) => {
+      const sign = value < 0 ? -1 : 1;
+      const n = Math.abs(Math.round(value));
+      const lastDigit = n % 10;
+      const base = n - lastDigit;
+
+      if (lastDigit <= 2) return sign * base;
+      if (lastDigit <= 7) return sign * (base + 5);
+      return sign * (base + 10);
+    };
+    const result = document.getElementById("result");
+    const langEnglish = document.getElementById("langEnglish");
+    const langHindi = document.getElementById("langHindi");
+    let currentLang = "en";
+    let lastResult = null;
+
+    const translations = {
+      en: {
+        title: "Meter Bill Generator",
+        subtitle: "Enter old/new readings and total amount to prepare the split bill.",
+        mamiOldLabel: "Mami Meter Old Reading",
+        mamiNewLabel: "Mami Meter New Reading",
+        naniOldLabel: "Nani Meter Old Reading",
+        naniNewLabel: "Nani Meter New Reading",
+        totalBillLabel: "Total Bill Price",
+        generate: "Generate Bill",
+        placeholderMamiOld: "0",
+        placeholderMamiNew: "0",
+        placeholderNaniOld: "0",
+        placeholderNaniNew: "0",
+        placeholderTotal: "0",
+        invalid: "Please fill all fields with valid numbers.",
+        billPreview: "Bill Preview",
+        mamiUnits: "Mami Meter Units",
+        mamiBill: "Mami Total Bill Price",
+        naniUnits: "Nani Meter Units",
+        naniBill: "Nani Total Bill Price",
+        note: (total) => `Total Bill Entered: ${total}. Final split calculated with (Unit x 7) and remaining difference divided equally.`,
+      },
+      hi: {
+        title: "मीटर बिल जनरेटर",
+        subtitle: "स्प्लिट बिल तैयार करने के लिए पुरानी/नई रीडिंग और कुल बिल राशि भरें।",
+        mamiOldLabel: "मामी मीटर पुरानी रीडिंग",
+        mamiNewLabel: "मामी मीटर नई रीडिंग",
+        naniOldLabel: "नानी मीटर पुरानी रीडिंग",
+        naniNewLabel: "नानी मीटर नई रीडिंग",
+        totalBillLabel: "कुल बिल राशि",
+        generate: "बिल जनरेट करें",
+        toggle: "English",
+        placeholderMamiOld: "0",
+        placeholderMamiNew: "0",
+        placeholderNaniOld: "0",
+        placeholderNaniNew: "0",
+        placeholderTotal: "0",
+        invalid: "कृपया सभी फ़ील्ड में सही संख्या भरें।",
+        billPreview: "बिल प्रीव्यू",
+        mamiUnits: "मामी मीटर यूनिट",
+        mamiBill: "मामी कुल बिल राशि",
+        naniUnits: "नानी मीटर यूनिट",
+        naniBill: "नानी कुल बिल राशि",
+        note: (total) => `दर्ज कुल बिल: ${total}। अंतिम स्प्लिट (यूनिट x 7) और बचा हुआ अंतर बराबर बांटकर निकाला गया है।`,
+      },
+    };
+
+    function applyLanguage() {
+      const t = translations[currentLang];
+      document.documentElement.lang = currentLang === "hi" ? "hi" : "en";
+      document.getElementById("titleText").textContent = t.title;
+      document.getElementById("subtitleText").textContent = t.subtitle;
+      document.getElementById("mamiOldLabel").textContent = t.mamiOldLabel;
+      document.getElementById("mamiNewLabel").textContent = t.mamiNewLabel;
+      document.getElementById("naniOldLabel").textContent = t.naniOldLabel;
+      document.getElementById("naniNewLabel").textContent = t.naniNewLabel;
+      document.getElementById("totalBillLabel").textContent = t.totalBillLabel;
+      document.getElementById("generateBtn").textContent = t.generate;
+      document.getElementById("mamiOld").placeholder = t.placeholderMamiOld;
+      document.getElementById("mamiNew").placeholder = t.placeholderMamiNew;
+      document.getElementById("naniOld").placeholder = t.placeholderNaniOld;
+      document.getElementById("naniNew").placeholder = t.placeholderNaniNew;
+      document.getElementById("totalBill").placeholder = t.placeholderTotal;
+      
+      if (currentLang === "en") {
+        langEnglish.classList.add("active");
+        langHindi.classList.remove("active");
+      } else {
+        langHindi.classList.add("active");
+        langEnglish.classList.remove("active");
+      }
+    }
+
+    function renderBillPreview(data) {
+      const t = translations[currentLang];
+      result.style.display = "block";
+      result.innerHTML = `
+        <p class="result-title">${t.billPreview}</p>
+        <div class="result-grid">
+          <div class="result-item unit-item"><strong>${t.mamiUnits}</strong><span>${data.mamiUnits}</span></div>
+          <div class="result-item price-item"><strong>${t.mamiBill}</strong><span>${data.mamiBillPrice}</span></div>
+          <div class="result-item unit-item"><strong>${t.naniUnits}</strong><span>${data.naniUnits}</span></div>
+          <div class="result-item price-item"><strong>${t.naniBill}</strong><span>${data.naniBillPrice}</span></div>
+        </div>
+        <p class="result-note">${t.note(data.totalBill)}</p>
+      `;
+    }
+
+    langEnglish.addEventListener("click", () => {
+      if (currentLang !== "en") {
+        currentLang = "en";
+        applyLanguage();
+        if (lastResult?.type === "error") {
+          result.style.display = "block";
+          result.textContent = translations[currentLang].invalid;
+        } else if (lastResult?.type === "preview") {
+          renderBillPreview(lastResult.data);
+        }
+      }
+    });
+
+    langHindi.addEventListener("click", () => {
+      if (currentLang !== "hi") {
+        currentLang = "hi";
+        applyLanguage();
+        if (lastResult?.type === "error") {
+          result.style.display = "block";
+          result.textContent = translations[currentLang].invalid;
+        } else if (lastResult?.type === "preview") {
+          renderBillPreview(lastResult.data);
+        }
+      }
+    });
+
+    document.getElementById("generateBtn").addEventListener("click", () => {
+      const t = translations[currentLang];
+
+      const inputs = document.querySelectorAll("input[required]");
+      let hasEmpty = false;
+
+      inputs.forEach((input) => {
+        if (input.value.trim() === "") {
+          hasEmpty = true;
+          input.style.borderColor = "#ef4444";
+        } else {
+          input.style.borderColor = "#c8d8f3";
+        }
+      });
+
+      if (hasEmpty) {
+        result.style.display = "block";
+        result.textContent = t.invalid;
+        lastResult = { type: "error" };
+        return;
+      }
+
+      const mamiOld = toNum("mamiOld");
+      const mamiNew = toNum("mamiNew");
+      const naniOld = toNum("naniOld");
+      const naniNew = toNum("naniNew");
+      const totalBill = toNum("totalBill");
+
+      if ([mamiOld, mamiNew, naniOld, naniNew, totalBill].some(Number.isNaN)) {
+        result.style.display = "block";
+        result.textContent = t.invalid;
+        lastResult = { type: "error" };
+        return;
+      }
+
+      const mamiUnits = Math.abs(mamiNew - mamiOld);
+      const naniUnits = Math.abs(naniNew - naniOld);
+      const mamiUnitsMul7 = mamiUnits * 7;
+      const naniUnitsMul7 = naniUnits * 7;
+      const sumUnitsMul7 = mamiUnitsMul7 + naniUnitsMul7;
+      const differenceFromTotal = totalBill - sumUnitsMul7;
+      const halfDifference = differenceFromTotal / 2;
+      const mamiFinalBill = mamiUnitsMul7 + halfDifference;
+      const naniFinalBill = naniUnitsMul7 + halfDifference;
+
+      lastResult = {
+        type: "preview",
+        data: {
+          mamiUnits: formatAmount(mamiUnits),
+          naniUnits: formatAmount(naniUnits),
+          mamiBillPrice: formatAmount(roundByLastDigitRule(mamiFinalBill)),
+          naniBillPrice: formatAmount(roundByLastDigitRule(naniFinalBill)),
+          totalBill: formatAmount(totalBill),
+        },
+      };
+      renderBillPreview(lastResult.data);
+    });
+
+    applyLanguage();
+  </script>
+</body>
+</html>
